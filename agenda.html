@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Agendamento - Barbearia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+
+
+
+
+/* Estilos gerais */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #2d2d2d;
+    color: #f4f4f4;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: #c8a97e;
+    text-shadow: 2px 2px 4px #000;
+}
+
+/* Botões */
+.options button {
+    background-color: #6b4e3d;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    margin: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.options button:hover {
+    background-color: #8c6b57;
+    transform: scale(1.05);
+}
+
+.selected {
+    border: 2px solid #c8a97e;
+    background-color: #a6835b !important;
+}
+
+/* Seções ocultas */
+.hidden {
+    display: none;
+}
+
+/* Dias, barbeiros e horários */
+.days button, .barbers button, .times button {
+    background-color: #c8a97e;
+    border: 2px solid transparent;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: inline-block;
+    transition: border 0.3s ease, background-color 0.3s ease;
+}
+
+.days button:hover, .barbers button:hover, .times button:hover {
+    border: 2px solid #f4f4f4;
+    background-color: #a6835b;
+}
+
+.barbers button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+}
+
+.barbers img {
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+    border: 2px solid #6b4e3d;
+}
+
+.barbers img:hover {
+    border-color: #8c6b57;
+}
+
+/* Botão de agendamento */
+#book {
+    background-color: #6b4e3d;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: block;
+    margin: 20px auto;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#book:hover {
+    background-color: #8c6b57;
+    transform: scale(1.05);
+}
+
+/* Animação das tesouras */
+#animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.scissors {
+    font-size: 3rem;
+    color: #c8a97e;
+    margin: 10px;
+    animation: float 1.5s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Destaque ao redor de seções */
+.section {
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #6b4e3d;
+    margin-bottom: 20px;
+    background-color: #3e3e3e;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.section h2, .section h3 {
+    color: #c8a97e;
+}
+
+
+</style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
+</head>
+<body>
+    <div id="app" class="container">
+        <header>
+            <h1>Agende seu horário</h1>
+        </header>
+
+        <main>
+            <section id="services">
+                <h2>Escolha um serviço</h2>
+                <div class="options">
+                    <button data-service="Corte" data-price="30">Corte - R$30</button>
+                    <button data-service="Barba" data-price="20">Barba - R$20</button>
+                    <button data-service="Luzes" data-price="50">Luzes - R$50</button>
+                    <button data-service="Progressiva" data-price="80">Progressiva - R$80</button>
+                    <button data-service="Pacote Barba" data-price="45">Pacote Barba - R$45</button>
+                    <button data-service="Pacote Completo" data-price="100">Pacote Completo - R$100</button>
+                </div>
+            </section>
+
+            <section id="details" class="hidden">
+                <h2>Detalhes do agendamento</h2>
+                <div id="date-picker">
+                    <h3>Selecione o dia</h3>
+                    <div class="days">
+                        <button>Terça - 20</button>
+                        <button>Quarta - 21</button>
+                        <button>Quinta - 22</button>
+                    </div>
+                </div>
+
+                <div id="barber-picker">
+                    <h3>Selecione seu profissional</h3>
+                    <div class="barbers">
+                        <button data-barber="Alex">
+                            <img src="alex.jpg" alt="Alex">
+                            <span>Alex</span>
+                        </button>
+                        <button data-barber="Daniel">
+                            <img src="daniel.jpg" alt="Daniel">
+                            <span>Daniel</span>
+                        </button>
+                        <button data-barber="Winicios">
+                            <img src="winicios.jpg" alt="Winicios">
+                            <span>Winicios</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="time-picker">
+                    <h3>Selecione o horário</h3>
+                    <div class="times">
+                        <!-- Horários de exemplo -->
+                        <button data-time="9:00">9:00 (2 vagas)</button>
+                        <button data-time="10:00">10:00 (2 vagas)</button>
+                        <button data-time="11:00">11:00 (2 vagas)</button>
+                        <button data-time="12:00">12:00 (2 vagas)</button>
+                    </div>
+                </div>
+
+                <button id="book">Agendar</button>
+            </section>
+        </main>
+
+        <div id="animation" class="hidden">
+            <span class="scissors">✂️</span>
+            <span class="scissors">✂️</span>
+            <span class="scissors">✂️</span>
+            <span class="scissors">✂️</span>
+            <span class="scissors">✂️</span>
+            <span class="scissors">✂️</span>
+        </div>
+    </div>
+
+    <script>
+
+
+
+
+
+// Importação do Firebase (use no HTML como <script type="module">)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+
+// Configuração do Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyCJJD9KUdzY5Mw8RNgrYTmxGbBEJ8OY5P8",
+    authDomain: "barbeariadaniel-6061e.firebaseapp.com",
+    projectId: "barbeariadaniel-6061e",
+    storageBucket: "barbeariadaniel-6061e.appspot.com",
+    messagingSenderId: "980860840423",
+    appId: "1:980860840423:web:c0479e5a8656943242f542",
+    measurementId: "G-K5XHVDVSRC"
+};
+
+// Inicializar Firebase e Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Seleção de elementos HTML
+const serviceButtons = document.querySelectorAll('#services button');
+const detailsSection = document.getElementById('details');
+const animation = document.getElementById('animation');
+const bookButton = document.getElementById('book');
+
+let selectedService = '';
+let selectedDay = '';
+let selectedBarber = '';
+let selectedTime = '';
+
+// Função para adicionar a classe "selected" aos botões clicados
+function markSelected(buttons, clickedButton) {
+    buttons.forEach(button => button.classList.remove('selected'));
+    clickedButton.classList.add('selected');
+}
+
+// Seleção de serviços
+serviceButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        selectedService = button.dataset.service;
+        markSelected(serviceButtons, button);
+        detailsSection.classList.remove('hidden');
+    });
+});
+
+// Seleção de dia
+const dayButtons = document.querySelectorAll('#date-picker .days button');
+dayButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        selectedDay = button.textContent;
+        markSelected(dayButtons, button);
+    });
+});
+
+// Seleção de barbeiro
+const barberButtons = document.querySelectorAll('#barber-picker .barbers button');
+barberButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        selectedBarber = button.dataset.barber;
+        markSelected(barberButtons, button);
+    });
+});
+
+// Seleção de horário
+const timeButtons = document.querySelectorAll('#time-picker .times button');
+timeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        selectedTime = button.dataset.time;
+        markSelected(timeButtons, button);
+    });
+});
+
+// Função para exibir animação de tesouras
+function animateScissors() {
+    animation.classList.remove('hidden');
+    setTimeout(() => {
+        animation.classList.add('hidden');
+    }, 2000);
+}
+
+// Função para agendar
+bookButton.addEventListener('click', async () => {
+    if (selectedService && selectedDay && selectedBarber && selectedTime) {
+        try {
+            await addDoc(collection(db, 'appointments'), {
+                service: selectedService,
+                day: selectedDay,
+                barber: selectedBarber,
+                time: selectedTime,
+                timestamp: new Date()
+            });
+
+            alert('Agendamento realizado com sucesso!');
+            animateScissors();
+
+            // Resetar seleção
+            serviceButtons.forEach(button => button.classList.remove('selected'));
+            dayButtons.forEach(button => button.classList.remove('selected'));
+            barberButtons.forEach(button => button.classList.remove('selected'));
+            timeButtons.forEach(button => button.classList.remove('selected'));
+
+            selectedService = '';
+            selectedDay = '';
+            selectedBarber = '';
+            selectedTime = '';
+            detailsSection.classList.add('hidden');
+        } catch (error) {
+            console.error('Erro ao realizar o agendamento:', error);
+            alert('Ocorreu um erro ao realizar o agendamento. Tente novamente.');
+        }
+    } else {
+        alert('Por favor, preencha todos os campos antes de agendar.');
+    }
+});
+
+</script>
+</body>
+</html>
